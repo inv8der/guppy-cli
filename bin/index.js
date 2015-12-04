@@ -40,8 +40,8 @@ var dest;
 if (argv.dest) {
   dest = argv.dest;
 } else {
-  var topLevel = exec('git rev-parse --show-toplevel', { silent: true })
-    .output.slice(0, -1);
+  var res = exec('git rev-parse --show-toplevel', { silent: true });
+  var topLevel = res.output.slice(0, -1);
   if (test('-f', topLevel + '/.git')) {
     // this is a sub module
     var buf = fs.readFileSync(topLevel + '/.git', "utf8").trim();
@@ -53,7 +53,10 @@ if (argv.dest) {
     dest = topLevel + '/.git/hooks/';
   }
 
-  if (error()) {
+  // git rev-parse will exit with error code 128 if directory is not a git repo.
+  // Since the exec method will only set the error flag if exit code is 1|2|126,
+  // we'll need to check the code ourselves instead of relying on `error()` 
+  if (res.code !== 0) {
     console.error('fatal: Not a git repository (or any of the parent directories): .git');
     exit(1);
   }
